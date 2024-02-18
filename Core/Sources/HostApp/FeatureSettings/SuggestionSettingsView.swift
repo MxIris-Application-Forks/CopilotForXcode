@@ -54,6 +54,8 @@ struct SuggestionSettingsView: View {
         var suggestionDisplayCompactMode
         @AppStorage(\.acceptSuggestionWithTab)
         var acceptSuggestionWithTab
+        @AppStorage(\.dismissSuggestionWithEsc)
+        var dismissSuggestionWithEsc
         @AppStorage(\.isSuggestionSenseEnabled)
         var isSuggestionSenseEnabled
 
@@ -185,6 +187,10 @@ struct SuggestionSettingsView: View {
                     Text("Accept Suggestion with Tab")
                 }
             }
+            
+            Toggle(isOn: $settings.dismissSuggestionWithEsc) {
+                Text("Dismiss Suggestion with ESC")
+            }
             #endif
 
             HStack {
@@ -212,7 +218,7 @@ struct SuggestionSettingsView: View {
             }
 
             HStack {
-                Slider(value: $settings.realtimeSuggestionDebounce, in: 0...2, step: 0.1) {
+                Slider(value: $settings.realtimeSuggestionDebounce, in: 0.1...2, step: 0.1) {
                     Text("Real-time Suggestion Debounce")
                 }
 

@@ -19,7 +19,6 @@ let package = Package(
             name: "ChatContextCollector",
             targets: ["ChatContextCollector", "ActiveDocumentChatContextCollector"]
         ),
-        .library(name: "Environment", targets: ["Environment"]),
         .library(name: "SuggestionModel", targets: ["SuggestionModel"]),
         .library(name: "ASTParser", targets: ["ASTParser"]),
         .library(name: "FocusedCodeFinder", targets: ["FocusedCodeFinder"]),
@@ -43,6 +42,7 @@ let package = Package(
             ]
         ),
         .library(name: "GitIgnoreCheck", targets: ["GitIgnoreCheck"]),
+        .library(name: "DebounceFunction", targets: ["DebounceFunction"]),
     ],
     dependencies: [
         // A fork of https://github.com/aespinilla/Tiktoken to allow loading from local files.
@@ -60,10 +60,11 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
             from: "0.55.0"
         ),
-        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
+        .package(url: "https://github.com/apple/swift-syntax.git", exact: "509.0.2"),
         .package(url: "https://github.com/GottaGetSwifty/CodableWrappers", from: "2.0.7"),
         .package(url: "https://github.com/krzyzanowskim/STTextView", from: "0.8.21"),
         .package(url: "https://github.com/google/generative-ai-swift", from: "0.4.4"),
+        .package(url: "https://github.com/sideeffect-io/AsyncExtensions", from: "0.5.2"),
 
         // TreeSitter
         .package(url: "https://github.com/intitni/SwiftTreeSitter.git", branch: "main"),
@@ -102,15 +103,7 @@ let package = Package(
             )]
         ),
 
-        .target(
-            name: "Environment",
-            dependencies: [
-                "ActiveApplicationMonitor",
-                "XcodeInspector",
-                "AXExtension",
-                "Preferences",
-            ]
-        ),
+        .target(name: "DebounceFunction"),
 
         .target(
             name: "AppActivator",
@@ -178,9 +171,14 @@ let package = Package(
                 "SuggestionModel",
                 "AXNotificationStream",
                 "Logger",
+                "Toast",
+                "Preferences",
+                .product(name: "AsyncExtensions", package: "AsyncExtensions"),
                 .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
             ]
         ),
+
+        .testTarget(name: "XcodeInspectorTests", dependencies: ["XcodeInspector"]),
 
         .target(name: "UserDefaultsObserver"),
 
@@ -189,6 +187,7 @@ let package = Package(
             dependencies: [
                 "Highlightr",
                 "Preferences",
+                "SuggestionModel",
                 .product(name: "STTextView", package: "STTextView"),
             ]
         ),
@@ -208,7 +207,6 @@ let package = Package(
                 "GitIgnoreCheck",
                 "UserDefaultsObserver",
                 "SuggestionModel",
-                "Environment",
                 "Logger",
                 "Preferences",
                 "XcodeInspector",

@@ -12,7 +12,6 @@ public enum AutoManagedChatGPTMemoryActor: GlobalActor {
 protocol AutoManagedChatGPTMemoryStrategy {
     func countToken(_ message: ChatMessage) async -> Int
     func countToken<F: ChatGPTFunction>(_ function: F) async -> Int
-    func reformat(_ prompt: ChatGPTPrompt) async -> ChatGPTPrompt
 }
 
 /// A memory that automatically manages the history according to max tokens and max message count.
@@ -172,12 +171,10 @@ extension AutoManagedChatGPTMemory {
         """)
         #endif
 
-        let reformattedPrompt = await strategy.reformat(.init(
+        return .init(
             history: allMessages,
             references: retrievedContent
-        ))
-
-        return reformattedPrompt
+        )
     }
 
     func generateMandatoryMessages(strategy: AutoManagedChatGPTMemoryStrategy) async -> (
@@ -289,14 +286,10 @@ extension AutoManagedChatGPTMemory {
                     text += """
                     Here are the information you know about the system and the project, \
                     separated by \(separator)
-
-
                     """
-                } else {
-                    text += "\n\(separator)\n"
                 }
 
-                text += content.content
+                text += "\n\n\(separator)[DOCUMENT \(index)]\n\n" + content.content
             }
 
             return .init(role: .user, content: text)
@@ -307,7 +300,7 @@ extension AutoManagedChatGPTMemory {
         {
             var right = retrievedContent.count
             var left = 0
-            var retrievedContent = retrievedContent
+            var gappedRetrievedContent = retrievedContent
             var tokenCount: Int?
             var proposedMessage = buildMessage(retrievedContent: [])
 
@@ -341,11 +334,11 @@ extension AutoManagedChatGPTMemory {
             while left <= right {
                 let count = (right + left) / 2
                 let _retrievedContent = Array(retrievedContent.prefix(count))
-                let _proposedMessage = buildMessage(retrievedContent: retrievedContent)
+                let _proposedMessage = buildMessage(retrievedContent: _retrievedContent)
                 let (isValid, _tokenCount) = await checkValid(proposedMessage: _proposedMessage)
                 if isValid {
                     proposedMessage = _proposedMessage
-                    retrievedContent = _retrievedContent
+                    gappedRetrievedContent = _retrievedContent
                     tokenCount = _tokenCount
                     left = count + 1
                 } else {
@@ -360,7 +353,7 @@ extension AutoManagedChatGPTMemory {
             } else {
                 await strategy.countToken(proposedMessage)
             }
-            return (proposedMessage, retrievedContent, finalCount)
+            return (proposedMessage, gappedRetrievedContent, finalCount)
         }
 
         let (message, references, tokensCount) = await buildMessageThatFits()

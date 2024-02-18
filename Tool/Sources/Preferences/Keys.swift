@@ -93,6 +93,13 @@ public struct UserDefaultPreferenceKeys {
         defaultValue: false,
         key: "ShowHideWidgetShortcutGlobally"
     )
+    
+    // MARK: Update Channel
+    
+    public let installBetaBuilds = PreferenceKey(
+        defaultValue: false,
+        key: "InstallBetaBuilds"
+    )
 }
 
 // MARK: - OpenAI Account Settings
@@ -214,6 +221,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: ChatGPTModel.gpt35Turbo.maxToken,
                     supportsFunctionCalling: true,
                     modelName: ChatGPTModel.gpt35Turbo.rawValue
@@ -247,6 +255,7 @@ public extension UserDefaultPreferenceKeys {
                 info: .init(
                     apiKeyName: "",
                     baseURL: "",
+                    isFullURL: false,
                     maxTokens: OpenAIEmbeddingModel.textEmbeddingAda002.maxToken,
                     modelName: OpenAIEmbeddingModel.textEmbeddingAda002.rawValue
                 )
@@ -327,11 +336,15 @@ public extension UserDefaultPreferenceKeys {
     }
 
     var realtimeSuggestionDebounce: PreferenceKey<Double> {
-        .init(defaultValue: 0, key: "RealtimeSuggestionDebounce")
+        .init(defaultValue: 0.2, key: "RealtimeSuggestionDebounce")
     }
 
     var acceptSuggestionWithTab: PreferenceKey<Bool> {
         .init(defaultValue: true, key: "AcceptSuggestionWithTab")
+    }
+    
+    var dismissSuggestionWithEsc: PreferenceKey<Bool> {
+        .init(defaultValue: true, key: "DismissSuggestionWithEsc")
     }
     
     var isSuggestionSenseEnabled: PreferenceKey<Bool> {
@@ -563,6 +576,27 @@ public extension UserDefaultPreferenceKeys {
         .init(
             defaultValue: false,
             key: "FeatureFlag-DisableEnhancedWorkspace"
+        )
+    }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioning: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioning"
+        )
+    }
+    
+    var restartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer: FeatureFlag {
+        .init(
+            defaultValue: true,
+            key: "FeatureFlag-RestartXcodeInspectorIfAccessibilityAPIIsMalfunctioningNoTimer"
+        )
+    }
+    
+    var toastForTheReasonWhyXcodeInspectorNeedsToBeRestarted: FeatureFlag {
+        .init(
+            defaultValue: false,
+            key: "FeatureFlag-ToastForTheReasonWhyXcodeInspectorNeedsToBeRestarted"
         )
     }
 }

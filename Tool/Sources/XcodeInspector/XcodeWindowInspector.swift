@@ -1,11 +1,12 @@
 import AppKit
+import AsyncExtensions
 import AXExtension
-import AXNotificationStream
 import Combine
 import Foundation
+import Logger
 
 public class XcodeWindowInspector: ObservableObject {
-    let uiElement: AXUIElement
+    public let uiElement: AXUIElement
 
     init(uiElement: AXUIElement) {
         self.uiElement = uiElement
@@ -17,29 +18,27 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
     @Published var documentURL: URL = .init(fileURLWithPath: "/")
     @Published var workspaceURL: URL = .init(fileURLWithPath: "/")
     @Published var projectRootURL: URL = .init(fileURLWithPath: "/")
-    private var updateTabsTask: Task<Void, Error>?
     private var focusedElementChangedTask: Task<Void, Error>?
+    let axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
 
     deinit {
-        updateTabsTask?.cancel()
         focusedElementChangedTask?.cancel()
     }
 
     public func refresh() {
-        Task { @MainActor in updateURLs() }
+        Task { @XcodeInspectorActor in updateURLs() }
     }
 
-    public init(app: NSRunningApplication, uiElement: AXUIElement) {
+    public init(
+        app: NSRunningApplication,
+        uiElement: AXUIElement,
+        axNotifications: AsyncPassthroughSubject<XcodeAppInstanceInspector.AXNotification>
+    ) {
         self.app = app
+        self.axNotifications = axNotifications
         super.init(uiElement: uiElement)
 
-        let notifications = AXNotificationStream(
-            app: app,
-            notificationNames: kAXFocusedUIElementChangedNotification
-        )
-
-        #warning("Test Me")
-        focusedElementChangedTask = Task { [weak self] in
+        focusedElementChangedTask = Task { [weak self, axNotifications] in
             await self?.updateURLs()
 
             await withThrowingTaskGroup(of: Void.self) { [weak self] group in
@@ -52,9 +51,11 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
                 }
 
                 group.addTask { [weak self] in
-                    for await _ in notifications {
+                    for await notification in axNotifications {
+                        guard notification.kind == .focusedUIElementChanged else { continue }
                         guard let self else { return }
                         try Task.checkCancellation()
+                        await Task.yield()
                         await self.updateURLs()
                     }
                 }
@@ -62,22 +63,28 @@ public final class WorkspaceXcodeWindowInspector: XcodeWindowInspector {
         }
     }
 
-    @MainActor
+    @XcodeInspectorActor
     func updateURLs() {
         let documentURL = Self.extractDocumentURL(windowElement: uiElement)
         if let documentURL {
-            self.documentURL = documentURL
+            Task { @MainActor in
+                self.documentURL = documentURL
+            }
         }
         let workspaceURL = Self.extractWorkspaceURL(windowElement: uiElement)
         if let workspaceURL {
-            self.workspaceURL = workspaceURL
+            Task { @MainActor in
+                self.workspaceURL = workspaceURL
+            }
         }
         let projectURL = Self.extractProjectURL(
             workspaceURL: workspaceURL,
             documentURL: documentURL
         )
         if let projectURL {
-            projectRootURL = projectURL
+            Task { @MainActor in
+                self.projectRootURL = projectURL
+            }
         }
     }
 
